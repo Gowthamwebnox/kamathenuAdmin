@@ -1,103 +1,208 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Box, MoreVertical, Package, ShoppingBag, Store, Truck, Users } from "lucide-react"
+import { DashboardHeader } from "@/components/common/dashboard-header"
+import { StatCard } from "@/components/common/stat-card"
+import { OrderStatusCard } from "@/components/common/order-status-card"
+import { RevenueChart } from "@/components/common/revenue-chart"
+import { TopCategoryList } from "@/components/common/top-category-list"
+import { CustomerDonutChart } from "@/components/common/customer-donut-chart"
+import { RevenueLineChart } from "@/components/common/revenue-line-chart"
+import Link from "next/link"
+import { SessionProvider } from "next-auth/react"
+import { formatCurrency } from "@/lib/utils"
+import { useEffect, useState } from "react"
+
+async function getDashboardStats() {
+  const res = await fetch("http://localhost:3001/api/admin/dashboard/stats", {
+    cache: 'no-store',
+  });
+  
+  if (!res.ok) {
+    throw new Error('Failed to fetch dashboard stats');
+  }
+  
+  return res.json();
+}
+
+export default  function DashboardPage() {
+  const [stats, setStats] = useState({
+    users: { total: 0, new: 0, returning: 0 },
+    orders: { total: 0, byStatus: {}, recent: 0 },
+    sellers: { total: 0 },
+    revenue: { total: 0 },
+    categories: []
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const data = await getDashboardStats();
+      setStats(data);
+    };
+    fetchStats();
+  }, []);
+  
+  // Calculate percentage changes (you might want to store these in the database)
+  const userChange = "+2.6%"; // This should come from comparing with previous period
+  const orderChange = "+2.6%"; // This should come from comparing with previous period
+  const sellerChange = "+2.6%"; // This should come from comparing with previous period
+
+  // Calculate customer distribution percentage
+  const totalCustomers = stats.users.new + stats.users.returning;
+  const newCustomerPercentage = totalCustomers > 0 
+    ? Math.round((stats.users.new / totalCustomers) * 100) 
+    : 0;
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-gray-50">
+      <main className="container mx-auto p-4 pt-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <StatCard
+            title="Total active users" 
+            value={stats.users.total.toLocaleString()}
+            change={userChange}
+            period="Last 6 days"
+            icon={""}
+            iconBg=""
+            avatars={["/assets/icons/Avatar.png", "/assets/icons/Avatar.png", "/assets/icons/Avatar.png"]}
+            bgColor="bg-[linear-gradient(91.14deg,#DAFAE5_6.08%,#BDF4D6_98.91%)]"
+          />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+          <StatCard
+            title="Total Orders"
+            value={stats.orders.total.toLocaleString()}
+            change={orderChange}
+            period="Last 6 days"
+            icon={"/assets/icons/orderTrack.png"}
+            iconBg="bg-purple-500"
+            bgColor="bg-[linear-gradient(90deg,#F4E4FF_0%,#E7CBFF_92.26%)]"
+          />
+
+          <StatCard
+            title="Total Sellers"
+            value={stats.sellers.total.toLocaleString()}
+            change={sellerChange}
+            period="Last 6 days"
+            icon={"/assets/icons/shop.png"}
+            iconBg="bg-orange-500"
+            bgColor="bg-[linear-gradient(90.71deg,#FFEDE1_3.9%,#FFDAC7_97.48%)]"
+          />
+        </div>
+
+        {/* Middle Section */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+          {/* Order Status Cards */}
+          {/* <div className="md:col-span-4 space-y-4 bg-white p-4 rounded-xl shadow-sm h-full">
+            <h3 className="text-lg font-medium mb-4">Orders Overview</h3>
+            <OrderStatusCard
+              title="Orders Placed"
+              value={stats.orders.byStatus.pending?.toString() || "0"}
+              icon={<ShoppingBag className="h-5 w-5 text-blue-500" />}
+              bgColor="bg-blue-50"
+              textColor="text-blue-500"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+
+            <OrderStatusCard
+              title="Confirmed Orders"
+              value={stats.orders.byStatus.shipped?.toString() || "0"}
+              icon={<Package className="h-5 w-5 text-green-500" />}
+              bgColor="bg-green-50"
+              textColor="text-green-500"
+            />
+
+            <OrderStatusCard
+              title="Processed Orders"
+              value={stats.orders.byStatus.delivered?.toString() || "0"}
+              icon={<Box className="h-5 w-5 text-red-500" />}
+              bgColor="bg-red-50"
+              textColor="text-red-500"
+            />
+
+            <OrderStatusCard
+              title="Shipped Orders"
+              value={stats.orders.byStatus.cancelled?.toString() || "0"}
+              icon={<Truck className="h-5 w-5 text-yellow-500" />}
+              bgColor="bg-yellow-50"
+              textColor="text-yellow-500"
+            />
+          </div> */}
+
+          {/* Revenue Chart */}
+          <div className="md:col-span-12 h-full">
+            <Card className="bg-[#FFFFF0] h-full">
+              <CardContent className="p-0">
+                <RevenueChart totalRevenue={stats.revenue.total} />
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="md:col-span-12 h-full">
+            <TopCategoryList categories={stats.categories} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-full">
+          <div className="md:col-span-4 h-full">
+            <Card className="h-full">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-medium text-lg">Total Customers</h3>
+                  <Button variant="ghost" size="icon">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </div>
+                <CustomerDonutChart percentage={newCustomerPercentage} />
+                <div className="flex justify-center gap-8 mt-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <span className="text-sm text-gray-500">New ({stats.users.new})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-yellow-300"></div>
+                    <span className="text-sm text-gray-500">Returning ({stats.users.returning})</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="md:col-span-8">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h3 className="font-medium text-lg">{formatCurrency(stats.revenue.total)}</h3>
+                    <p className="text-sm text-gray-500">Total Revenue</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                      <span className="text-xs text-gray-500">This Month</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                      <span className="text-xs text-gray-500">Last Month</span>
+                    </div>
+                  </div>
+                </div>
+                <RevenueLineChart />
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Recent Orders</span>
+                    <span className="text-sm font-medium">{stats.orders.recent}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Total Categories</span>
+                    <span className="text-sm font-medium">{stats.categories.length}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
-  );
+  )
 }
