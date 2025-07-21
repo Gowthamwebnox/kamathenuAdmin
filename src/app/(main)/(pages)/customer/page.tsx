@@ -29,6 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { CustomerDetailsDialog } from "@/components/common/customers/CustomerDetailsDialog";
+import axiosInstance from "@/app/utils/axiosInstance";
 
 interface Customer {
   id: string;
@@ -136,12 +137,12 @@ export default function CustomerPage() {
         params.append("isEmailVerified", "false");
       }
 
-      const response = await fetch(`/api/admin/customer?${params.toString()}`);
-      if (!response.ok) {
+      const response = await axiosInstance.get(`/admin/fetchUser`);
+      if (response.status==400) {
         throw new Error("Network response was not ok");
       }
-      const result = await response.json();
-      return result.data;
+      
+      return response.data;
     },
   });
 
@@ -315,8 +316,8 @@ export default function CustomerPage() {
       ) : (
         <DataTable
           columns={columns}
-          data={data?.customers || []}
-          totalCount={data?.count?.total || 0}
+          data={data|| []}
+          totalCount={data || 0}
           pageSize={pageSize}
           pageIndex={pageIndex}
           onPageChange={handlePageChange}
