@@ -86,20 +86,20 @@ export function DataTable<TData, TValue>({
         {filterOptions && (
           <div className="w-full sm:w-[200px]">
             <Select
-              value={filterOptions.value}
+              value={filterOptions?.value}
               onValueChange={(value) => {
-                if (filterOptions.onChange) {
-                  filterOptions.onChange(value)
+                if (filterOptions?.onChange) {
+                  filterOptions?.onChange(value)
                 }
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder={filterOptions.options[0].label} />
+                <SelectValue placeholder={filterOptions?.options[0]?.label} />
               </SelectTrigger>
               <SelectContent>
-                {filterOptions.options.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                {filterOptions?.options.map((option) => (
+                  <SelectItem key={option?.value} value={option?.value}>
+                    {option?.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -156,8 +156,8 @@ export function DataTable<TData, TValue>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
+            {table.getRowModel()?.rows?.length ? (
+              table.getRowModel()?.rows?.map((row) => (
                 <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>

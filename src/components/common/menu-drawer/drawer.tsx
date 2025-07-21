@@ -70,7 +70,7 @@ export function MenuDrawerLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleClick = () => {
-    router.push("/products/newproducts");
+    router.push("/prodcuts/newproducts");
   };
 
   const handleLogout = async () => {
@@ -133,7 +133,7 @@ export function MenuDrawerLayout({ children }: { children: React.ReactNode }) {
             <Button
               onClick={handleClick}
               variant="outline"
-              className="bg-red-600 text-white flex items-center gap-1"
+              className="bg-yellow-600 text-white flex items-center gap-1"
             >
               <Plus className="h-4 w-4" />
               Add new

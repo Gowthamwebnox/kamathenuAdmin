@@ -1,12 +1,24 @@
 "use client"
 import Image from "next/image"
-import type { Product } from "@/../types/product"
+// import type { Product } from "@/../types/product"
+
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal, Pencil, Eye, Trash2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  stockQuantity: number;
+  category: string;
+  imageUrl?: string;
+  isPublished: boolean;
+  createdAt: string;
+}
 
 interface ProductGridProps {
   products: Product[]
@@ -23,15 +35,15 @@ export function ProductGrid({ products, onView, onEdit, onDelete, onPublishChang
         <Card key={product.id} className="overflow-hidden">
           <div className="relative aspect-square">
             <Image
-              src={product.imageUrl || "/placeholder.svg?height=200&width=200"}
-              alt={product.name}
+              src={product?.imageUrl?.[0] || "/placeholder.svg?height=200&width=200"}
+              alt={product?.name}
               fill
               className="object-cover"
             />
           </div>
           <CardContent className="p-4">
             <div className="flex justify-between items-start mb-2">
-              <h3 className="font-medium text-sm line-clamp-1">{product.name}</h3>
+              <h3 className="font-medium text-sm line-clamp-1">{product?.name}</h3>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -58,13 +70,13 @@ export function ProductGrid({ products, onView, onEdit, onDelete, onPublishChang
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <p className="text-xs text-muted-foreground mb-2">{product.category}</p>
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{product.description}</p>
+            <p className="text-xs text-muted-foreground mb-2">{product?.category}</p>
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{product?.description}</p>
             <div className="flex justify-between items-center">
-              <span className="text-sm">Stock: {product.stockQuantity}</span>
+              <span className="text-sm">Stock: {product?.stockQuantity}</span>
               <Badge
                 className={
-                  product.isPublished
+                  product?.isPublished
                     ? "bg-[#6366f1] hover:bg-[#5355d1] text-white"
                     : "bg-secondary text-secondary-foreground"
                 }
@@ -74,8 +86,8 @@ export function ProductGrid({ products, onView, onEdit, onDelete, onPublishChang
             </div>
           </CardContent>
           <CardFooter className="p-4 pt-0 flex justify-between">
-            <span className="font-medium">${product.price.toFixed(2)}</span>
-            <Switch checked={product.isPublished} onCheckedChange={(checked) => onPublishChange(product, checked)} />
+            <span className="font-medium">${product?.price?.toFixed(2)}</span>
+            <Switch checked={product?.isPublished} onCheckedChange={(checked) => onPublishChange(product, checked)} />
           </CardFooter>
         </Card>
       ))}

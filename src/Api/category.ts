@@ -2,8 +2,8 @@ import axios from "axios";
 
 export class Category {
   static async getCategories() {
-    const response = await axios.get("/api/admin/category");
-    return response.data.data; 
+    const response = await axios.get("http://localhost:8000/api/admin/fetchCategory");
+    return response.data.categories; 
   } 
   
   
@@ -13,7 +13,7 @@ export class Category {
     imageUrl?: string;
   }) {
     const response = await axios.post("/api/admin/category", categoryData);
-    return response.data.data;
+    return response.data.categories;
   }
 
   static async updateCategory(categoryData: { 
@@ -23,6 +23,6 @@ export class Category {
     imageUrl?: string;
   }) {
     const response = await axios.put("/api/admin/category", categoryData);
-    return response.data.data;
+    return response.data.categories;
   }
 }

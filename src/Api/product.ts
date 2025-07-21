@@ -13,15 +13,16 @@ export class Product {
     offset?: number
     isApproved?: boolean
     sellerType?: string
-  }, session?: any) {
-    const response = await axios.get("api/admin/products", {
-      params,
-      headers: {
-        'x-session-data': session ? JSON.stringify(session) : '{}'
-      }
+  }) {
+    console.log("params",params);
+      const response = await axios.get("http://localhost:8000/api/admin/fetchAllProduct", {
+      params
+      // headers: {
+      //   'x-session-data': session ? JSON.stringify(session) : '{}'
+      // }
     })
 
-    return response.data
+    return response
   }
 
   static async approveProduct({ id, isApproved }: {

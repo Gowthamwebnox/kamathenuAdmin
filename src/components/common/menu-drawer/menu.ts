@@ -35,7 +35,7 @@ export const menuItems: MenuItem[] = [
   {
     id: "products",
     label: "Products",
-    href: "/products",
+    href: "/prodcuts",
     icon: Package,
     description: "Manage your products",
   },
