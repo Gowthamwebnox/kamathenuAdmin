@@ -23,6 +23,8 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { menuItems } from "@/components/common/menu-drawer/menu";      
 import { CommandMenu } from "@/components/cmdk/command-menu";
+import auth from "@/app/middleware/auth";
+import { useUserStore } from "@/app/(stateManagement)/userStore";
 
 export function MenuDrawerLayout({ children }: { children: React.ReactNode }) {
   const [expanded, setExpanded] = React.useState(true);
@@ -32,7 +34,7 @@ export function MenuDrawerLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   const [showUserDropdown, setShowUserDropdown] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
-
+  const { clearUser } = useUserStore();
   // Function to determine active menu item based on current path
   const getActiveMenuItem = (path: string): string => {
     const routes = Object.fromEntries(
@@ -48,6 +50,7 @@ export function MenuDrawerLayout({ children }: { children: React.ReactNode }) {
 
   // Update active menu item when pathname changes
   React.useEffect(() => {
+    
     const newActiveId = getActiveMenuItem(pathname);
     setActiveId(newActiveId);
   }, [pathname]);
@@ -74,8 +77,10 @@ export function MenuDrawerLayout({ children }: { children: React.ReactNode }) {
   };
 
   const handleLogout = async () => {
-    await signOut({ redirect: false });
+    clearUser()
     router.push("/login");
+    
+    router.refresh()
   };
 
   return (

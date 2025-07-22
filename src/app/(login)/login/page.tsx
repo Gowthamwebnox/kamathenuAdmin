@@ -19,7 +19,8 @@ import { useUserStore } from "@/app/(stateManagement)/userStore"
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/"
+  // searchParams.get("callbackUrl") ||
+  const callbackUrl =  "/"
   const errorParam = searchParams.get("error") || ""
   const { data: session, status } = useSession()
 
@@ -54,15 +55,22 @@ function LoginForm() {
       if (result.status === 200) {
         {
           const userData = result.data;
-        setUser({
-            userId:userData.user.id,
-            userToken:userData.Token,
-            userName:userData.user.name,
-            userEmail:userData.user.email,
-          })
-        }
+          if(userData.user.roleId === 'SUPERADMIN'){
+            setUser({
+              userId:userData.user.id,
+              userToken:userData.Token,
+              userName:userData.user.name,
+              userEmail:userData.user.email,
+            })
+            
         router.push(callbackUrl)
-        router.refresh()
+          }
+          else{
+            toast.error("You are not authorized to access this application")
+           window.location.reload()
+          }
+        
+        }
       } 
           }
 

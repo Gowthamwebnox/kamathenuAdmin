@@ -14,6 +14,8 @@ import Link from "next/link"
 import { SessionProvider } from "next-auth/react"
 import { formatCurrency } from "@/lib/utils"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useUserStore } from "./(stateManagement)/userStore"
 
 async function getDashboardStats() {
   const res = await fetch("http://localhost:3001/api/admin/dashboard/stats", {
@@ -27,7 +29,9 @@ async function getDashboardStats() {
   return res.json();
 }
 
-export default  function DashboardPage() {
+export default function DashboardPage() {
+  const router = useRouter()
+  const { user } = useUserStore()
   const [stats, setStats] = useState({
     users: { total: 0, new: 0, returning: 0 },
     orders: { total: 0, byStatus: {}, recent: 0 },
@@ -37,12 +41,18 @@ export default  function DashboardPage() {
   });
 
   useEffect(() => {
+    // Check authentication
+    if (!user) {
+      router.push('/login')
+      return
+    }
+    
     const fetchStats = async () => {
       const data = await getDashboardStats();
       setStats(data);
     };
     fetchStats();
-  }, []);
+  }, [user, router]);
   
   // Calculate percentage changes (you might want to store these in the database)
   const userChange = "+2.6%"; // This should come from comparing with previous period
