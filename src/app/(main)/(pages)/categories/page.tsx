@@ -42,6 +42,7 @@ import { Category as CategoryApis } from "../../../../Api/category"
 import { Skeleton } from "@/components/ui/skeleton";
 import { S3Storage } from "@/lib/s3";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import axiosInstance from "@/app/utils/axiosInstance";
 
 function TableSkeleton() {
   return (
@@ -379,9 +380,12 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleDeleteCategory = (category: CategoryType) => {
+  const handleDeleteCategory = async (category: CategoryType) => {
     if (window.confirm(`Are you sure you want to delete ${category.name}?`)) {
-      deleteMutation.mutate(category.id);
+      // deleteMutation.mutate(category.id);
+      const response =await axiosInstance.delete(`/admin/deleteCategory/${category.id}`)
+      toast.success("Category Deleted");
+      window.location.reload()
     }
   };
 

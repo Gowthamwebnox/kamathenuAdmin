@@ -3,12 +3,12 @@ import {createJSONStorage, persist} from "zustand/middleware";
 
 
 
-type UserInterface={
-    userId:string;
-    userToken:string;
-    userName:string;
-    userEmail:string;
-}
+    type UserInterface={
+        userId:string;
+        userToken:string;
+        userName:string;
+        userEmail:string;
+    }
 
 type UserStore={
     user:UserInterface|null;

@@ -38,6 +38,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import axiosInstance from "@/app/utils/axiosInstance";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 
 interface Order {
   id: string;
@@ -48,12 +49,15 @@ interface Order {
   productDescription: string;
   customer: string;
   email: string;
+  userId: string;
   date: string;
   time: string;
   items: number;
   price: string;
   status: string;
   variantInfo?: string;
+  userDocument: boolean;
+  userDocumentId: string;
 }
 
 interface OrderAPIResponse {
@@ -261,7 +265,7 @@ const Productspage = () => {
   const [cancelDialogOrder, setCancelDialogOrder] =
     useState<OrderAPIItem | null>(null);
   const [shipmentDialogOpen, setShipmentDialogOpen] = useState(false);
-//   const [shipmentDialogData, setShipmentDialogData] = useState<Shipment | null>(null);
+  //   const [shipmentDialogData, setShipmentDialogData] = useState<Shipment | null>(null);
   const [orderItems, setOrderItems] = useState<OrderAPIItem[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
@@ -322,37 +326,35 @@ const Productspage = () => {
     //   icon: statusIcons.cancelled,
     // },
   ];
-  var pending=0;
-  var delivered=0;
-  var cancelled=0;
+  var pending = 0;
+  var delivered = 0;
+  var cancelled = 0;
   // Fetch orders from API with query params
   const getOrders = async () => {
     try {
       setLoading(true);
-      const response:any = await axiosInstance.get(`/seller/fetchSellerOrders/${"c6fe18bd-0e74-47f9-b8e1-83f1f93b9760"}`);
-      console.log("🔥🔥🔥🔥🔥🔥response🔥🔥🔥🔥🔥🔥", response)
-      
+      const response: any = await axiosInstance.get(`/admin/fetchOrders`);
+
       if (response.status === 200) {
         // Your API returns a single order item, so we'll wrap it in an array
-        const orderItem = response.data 
-        const orderItemsData = response.data;
+        const orderItem = response.data.orders
+        const orderItemsData = response.data.orders;
         orderItemsData.map((item: any) => {
-          
-          if(item.status === "pending"){
+
+          if (item.status === "pending") {
             pending++;
           }
-          if(item.status === "delivered"){
+          if (item.status === "delivered") {
             delivered++;
           }
-          if(item.status === "cancelled"){
+          if (item.status === "cancelled") {
             cancelled++;
           }
         })
-        
-        console.log("🔥🔥🔥🔥🔥🔥orderItemsData🔥🔥🔥🔥🔥🔥", orderItemsData.length)
-        
+
+
         setOrderCounts({
-          All:response.data.length, 
+          All: response.data.orders.length,
           pending: pending,
           // shipped: orderItem.status === "shipped" ? 1 : 0,
           delivered: delivered,
@@ -360,7 +362,7 @@ const Productspage = () => {
           // cancellRequested: orderItem.status === "cancellRequested" ? 1 : 0,
         });
         setOrderItems(orderItemsData);
-        
+
         const formattedOrders = orderItemsData.map(
           (item: any) => {
             const createdAt = new Date(item.createdAt);
@@ -373,10 +375,10 @@ const Productspage = () => {
               hour: "numeric",
               minute: "2-digit",
             });
-            
+
             // const productImage = getProductImage(item);
             const { title, description } = getProductDetails(item);
-            
+
             return {
               id: item.id,
               orderId: item.orderId,
@@ -384,14 +386,17 @@ const Productspage = () => {
               productName: title,
               productImage: item.product.images[0].imageUrl[0],
               productDescription: item.product.description,
-              customer: "Customer", // Since User is null in your response
-              email: "customer@example.com", // Since User is null in your response
+              customer: item?.User?.name || "Customer", // Since User is null in your response
+              email: item?.User?.email || "customer@example.com",
+              userId: item?.User?.id || "", // Since User is null in your response
               date,
               time,
               items: 1, // Default to 1 since quantity is not in your response
               price: `₹${item.priceAtPurchase}`,
               status: item.status,
               designUrl: item.designDocument,
+              userDocumentId: item?.UserDesignDocument[0]?.id ? item?.UserDesignDocument[0]?.id : "",
+              userDocument: item?.UserDesignDocument[0]?.id ? true : false,
             };
           }
         );
@@ -401,7 +406,6 @@ const Productspage = () => {
         setOrderItems([]);
       }
     } catch (error) {
-      console.error("Error fetching orders:", error);
       setOrders([]);
       setOrderItems([]);
     } finally {
@@ -443,8 +447,8 @@ const Productspage = () => {
 
   const handleCheckboxChange = (id: string) => {
     setSelectedOrders((prevSelected) =>
-        prevSelected.includes(id)
-          ? prevSelected.filter((orderId) => orderId !== id)
+      prevSelected.includes(id)
+        ? prevSelected.filter((orderId) => orderId !== id)
         : [...prevSelected, id]
     );
   };
@@ -518,7 +522,7 @@ const Productspage = () => {
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
       setStatusLoading(true);
-      const response:any = await axios.patch(`/api/seller/orders/${orderId}`, {
+      const response: any = await axios.patch(`/api/seller/orders/${orderId}`, {
         status: newStatus,
       });
 
@@ -542,10 +546,8 @@ const Productspage = () => {
           };
         });
       } else {
-        console.error("Failed to update order status:", response.data.message);
       }
     } catch (error) {
-      console.error("Error updating order status:", error);
     } finally {
       setStatusLoading(false);
       setStatusDialogOpen(false);
@@ -604,7 +606,7 @@ const Productspage = () => {
     const [refundAmount, setRefundAmount] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
 
-    const orderItem:any = cancelDialogOrder;
+    const orderItem: any = cancelDialogOrder;
     if (!orderItem) return null;
 
     const refundAmounts = calculateRefundAmounts(orderItem);
@@ -624,7 +626,7 @@ const Productspage = () => {
           Number.parseFloat(refundAmount) ||
           calculateRefundAmounts(cancelDialogOrder).refundableAmount;
 
-        const response:any = await axios.post(
+        const response: any = await axios.post(
           `/api/user/orders/${cancelDialogOrder.id}/cancel`,
           {
             cancelType: "withRefund",
@@ -645,7 +647,6 @@ const Productspage = () => {
           alert("Order cancelled successfully with refund initiated.");
         }
       } catch (error) {
-        console.error("Error cancelling order:", error);
         alert("Failed to cancel order. Please try again.");
       } finally {
         setIsProcessing(false);
@@ -658,7 +659,7 @@ const Productspage = () => {
 
       setIsProcessing(true);
       try {
-        const response:any = await axios.post(
+        const response: any = await axios.post(
           `/api/user/orders/${cancelDialogOrder.id}/cancel`,
           {
             cancelType: "withoutRefund",
@@ -677,395 +678,392 @@ const Productspage = () => {
           alert("Order cancelled successfully without refund.");
         }
       } catch (error) {
-        console.error("Error cancelling order:", error);
         alert("Failed to cancel order. Please try again.");
       } finally {
         setIsProcessing(false);
       }
     };
 
-  //   return (
-  //     <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-  //       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-  //         <DialogHeader className="space-y-3">
-  //           <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-  //             <AlertTriangle className="h-6 w-6 text-orange-500" />
-  //             Cancel Order & Process Refund
-  //           </DialogTitle>
-  //           <p className="text-gray-600">
-  //             Review the order details and choose the appropriate cancellation
-  //             option
-  //           </p>
-  //         </DialogHeader>
+    //   return (
+    //     <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+    //       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+    //         <DialogHeader className="space-y-3">
+    //           <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+    //             <AlertTriangle className="h-6 w-6 text-orange-500" />
+    //             Cancel Order & Process Refund
+    //           </DialogTitle>
+    //           <p className="text-gray-600">
+    //             Review the order details and choose the appropriate cancellation
+    //             option
+    //           </p>
+    //         </DialogHeader>
 
-  //         <div className="space-y-6">
-  //           {/* Order Overview Card */}
-  //           <Card>
-  //             {/* <CardHeader>
-  //               <CardTitle className="flex items-center gap-2 text-lg">
-  //                 <Package className="h-5 w-5" />
-  //                 Order Details
-  //               </CardTitle>
-  //             </CardHeader> */}
-  //             <CardContent>
-  //               <div className="flex flex-col lg:flex-row gap-6">
-  //                 {/* Product Image */}
-  //                 <div className="flex-shrink-0">
-  //                   <img
-  //                     src={primaryImage || "/placeholder.svg"}
-  //                     alt={orderItem.productVariant.title}
-  //                     className="w-32 h-32 object-cover rounded-lg border border-gray-200 shadow-sm"
-  //                   />
-  //                 </div>
+    //         <div className="space-y-6">
+    //           {/* Order Overview Card */}
+    //           <Card>
+    //             {/* <CardHeader>
+    //               <CardTitle className="flex items-center gap-2 text-lg">
+    //                 <Package className="h-5 w-5" />
+    //                 Order Details
+    //               </CardTitle>
+    //             </CardHeader> */}
+    //             <CardContent>
+    //               <div className="flex flex-col lg:flex-row gap-6">
+    //                 {/* Product Image */}
+    //                 <div className="flex-shrink-0">
+    //                   <img
+    //                     src={primaryImage || "/placeholder.svg"}
+    //                     alt={orderItem.productVariant.title}
+    //                     className="w-32 h-32 object-cover rounded-lg border border-gray-200 shadow-sm"
+    //                   />
+    //                 </div>
 
-  //                 {/* Product & Order Info */}
-  //                 <div className="flex-1 space-y-4">
-  //                   <div>
-  //                     <h3 className="text-xl font-semibold text-gray-900">
-  //                       {orderItem.productVariant.title}
-  //                     </h3>
-  //                     <p className="text-gray-600 mt-1">
-  //                       {orderItem.productVariant.description ? orderItem.productVariant.description : ""}
-  //                     </p>
-  //                     {orderItem.productVariant.variantType && (
-  //                       <Badge variant="secondary" className="mt-2">
-  //                         {orderItem.productVariant.variantType}:{" "}
-  //                         {orderItem.productVariant.variantValue}
-  //                       </Badge>
-  //                     )}
-  //                   </div>
+    //                 {/* Product & Order Info */}
+    //                 <div className="flex-1 space-y-4">
+    //                   <div>
+    //                     <h3 className="text-xl font-semibold text-gray-900">
+    //                       {orderItem.productVariant.title}
+    //                     </h3>
+    //                     <p className="text-gray-600 mt-1">
+    //                       {orderItem.productVariant.description ? orderItem.productVariant.description : ""}
+    //                     </p>
+    //                     {orderItem.productVariant.variantType && (
+    //                       <Badge variant="secondary" className="mt-2">
+    //                         {orderItem.productVariant.variantType}:{" "}
+    //                         {orderItem.productVariant.variantValue}
+    //                       </Badge>
+    //                     )}
+    //                   </div>
 
-  //                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-  //                     <div>
-  //                       <p className="text-sm text-gray-500">Order ID</p>
-  //                       <p className="font-medium text-sm break-all">
-  //                         {orderItem.id}
-  //                       </p>
-  //                     </div>
-  //                     <div>
-  //                       <p className="text-sm text-gray-500">SKU</p>
-  //                       <p className="font-medium">
-  //                         {orderItem.productVariant.productVariantSKU}
-  //                       </p>
-  //                     </div>
-  //                     <div>
-  //                       <p className="text-sm text-gray-500">Quantity</p>
-  //                       <p className="font-medium">{orderItem.quantity}</p>
-  //                     </div>
-  //                     <div>
-  //                       <p className="text-sm text-gray-500">Status</p>
-  //                       <Badge
-  //                         className={
-  //                           badgeStyles[orderItem.status]
-  //                         }
-  //                       >
-  //                         {orderItem.status.charAt(0).toUpperCase() +
-  //                           orderItem.status.slice(1)}
-  //                       </Badge>
-  //                     </div>
-  //                   </div>
-  //                 </div>
-  //               </div>
-  //             </CardContent>
-  //           </Card>
+    //                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    //                     <div>
+    //                       <p className="text-sm text-gray-500">Order ID</p>
+    //                       <p className="font-medium text-sm break-all">
+    //                         {orderItem.id}
+    //                       </p>
+    //                     </div>
+    //                     <div>
+    //                       <p className="text-sm text-gray-500">SKU</p>
+    //                       <p className="font-medium">
+    //                         {orderItem.productVariant.productVariantSKU}
+    //                       </p>
+    //                     </div>
+    //                     <div>
+    //                       <p className="text-sm text-gray-500">Quantity</p>
+    //                       <p className="font-medium">{orderItem.quantity}</p>
+    //                     </div>
+    //                     <div>
+    //                       <p className="text-sm text-gray-500">Status</p>
+    //                       <Badge
+    //                         className={
+    //                           badgeStyles[orderItem.status]
+    //                         }
+    //                       >
+    //                         {orderItem.status.charAt(0).toUpperCase() +
+    //                           orderItem.status.slice(1)}
+    //                       </Badge>
+    //                     </div>
+    //                   </div>
+    //                 </div>
+    //               </div>
+    //             </CardContent>
+    //           </Card>
 
-  //           {/* Customer Information */}
-  //           <Card>
-  //             <CardHeader>
-  //               <CardTitle className="flex items-center gap-2 text-lg">
-  //                 <User className="h-5 w-5" />
-  //                 Customer Information
-  //               </CardTitle>
-  //             </CardHeader>
-  //             <CardContent>
-  //               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  //                 <div>
-  //                   <p className="text-sm text-gray-500">Customer Name</p>
-  //                   <p className="font-medium">{orderItem.order.user?.name || orderItem.order.shippingAddress.fullName || ""}</p>
-  //                 </div>
-  //                 <div>
-  //                   <p className="text-sm text-gray-500">Email</p>
-  //                   <p className="font-medium">{orderItem.order.user?.email || orderItem.order.shippingAddress.email || ""}</p>
-  //                 </div>
-  //                 <div>
-  //                   <p className="text-sm text-gray-500">Phone</p>
-  //                   <p className="font-medium">
-  //                     {orderItem.order.shippingAddress.phone}
-  //                   </p>
-  //                 </div>
-  //                 <div>
-  //                   <p className="text-sm text-gray-500">Order Date</p>
-  //                   <p className="font-medium">
-  //                     {new Date(orderItem.createdAt).toLocaleDateString(
-  //                       "en-GB",
-  //                       {
-  //                         day: "2-digit",
-  //                         month: "short",
-  //                         year: "numeric",
-  //                         hour: "2-digit",
-  //                         minute: "2-digit",
-  //                       }
-  //                     )}
-  //                   </p>
-  //                 </div>
-  //               </div>
+    //           {/* Customer Information */}
+    //           <Card>
+    //             <CardHeader>
+    //               <CardTitle className="flex items-center gap-2 text-lg">
+    //                 <User className="h-5 w-5" />
+    //                 Customer Information
+    //               </CardTitle>
+    //             </CardHeader>
+    //             <CardContent>
+    //               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    //                 <div>
+    //                   <p className="text-sm text-gray-500">Customer Name</p>
+    //                   <p className="font-medium">{orderItem.order.user?.name || orderItem.order.shippingAddress.fullName || ""}</p>
+    //                 </div>
+    //                 <div>
+    //                   <p className="text-sm text-gray-500">Email</p>
+    //                   <p className="font-medium">{orderItem.order.user?.email || orderItem.order.shippingAddress.email || ""}</p>
+    //                 </div>
+    //                 <div>
+    //                   <p className="text-sm text-gray-500">Phone</p>
+    //                   <p className="font-medium">
+    //                     {orderItem.order.shippingAddress.phone}
+    //                   </p>
+    //                 </div>
+    //                 <div>
+    //                   <p className="text-sm text-gray-500">Order Date</p>
+    //                   <p className="font-medium">
+    //                     {new Date(orderItem.createdAt).toLocaleDateString(
+    //                       "en-GB",
+    //                       {
+    //                         day: "2-digit",
+    //                         month: "short",
+    //                         year: "numeric",
+    //                         hour: "2-digit",
+    //                         minute: "2-digit",
+    //                       }
+    //                     )}
+    //                   </p>
+    //                 </div>
+    //               </div>
 
-  //               <Separator className="my-4" />
+    //               <Separator className="my-4" />
 
-  //               <div>
-  //                 <p className="text-sm text-gray-500 mb-2">Shipping Address</p>
-  //                 {/* <p className="text-sm">
-  //                   {orderItem.order.shippingAddress.street},{" "}
-  //                   {orderItem.order.shippingAddress.city},{" "}
-  //                   {orderItem.order.shippingAddress.state} -{" "}
-  //                   {orderItem.order.shippingAddress.zipCode},{" "}
-  //                   {orderItem.order.shippingAddress.country}
-  //                 </p> */}
-  //               </div>
-  //             </CardContent>
-  //           </Card>
+    //               <div>
+    //                 <p className="text-sm text-gray-500 mb-2">Shipping Address</p>
+    //                 {/* <p className="text-sm">
+    //                   {orderItem.order.shippingAddress.street},{" "}
+    //                   {orderItem.order.shippingAddress.city},{" "}
+    //                   {orderItem.order.shippingAddress.state} -{" "}
+    //                   {orderItem.order.shippingAddress.zipCode},{" "}
+    //                   {orderItem.order.shippingAddress.country}
+    //                 </p> */}
+    //               </div>
+    //             </CardContent>
+    //           </Card>
 
-  //           {/* Payment & Refund Information */}
-  //           <Card>
-  //             <CardHeader>
-  //               <CardTitle className="flex items-center gap-2 text-lg">
-  //                 <CreditCard className="h-5 w-5" />
-  //                 Payment & Refund Details
-  //               </CardTitle>
-  //             </CardHeader>
-  //             <CardContent>
-  //               <div className="space-y-4">
-  //                 {/* Payment Breakdown */}
-  //                 <div className="bg-gray-50 p-4 rounded-lg">
-  //                   <h4 className="font-semibold mb-3">Payment Breakdown</h4>
-  //                   <div className="space-y-2 text-sm">
-  //                     <div className="flex justify-between">
-  //                       <span>Item Price:</span>
-  //                       <span><span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.itemPrice.toFixed(2)}</span>
-  //                     </div>
-  //                     {refundAmounts.discountAmount > 0 && (
-  //                       <div className="flex justify-between text-green-600">
-  //                         <span>Discount Applied:</span>
-  //                         <span>
-  //                           -<span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.discountAmount.toFixed(2)}
-  //                         </span>
-  //                       </div>
-  //                     )}
-  //                     <div className="flex justify-between">
-  //                       <span>GST ({orderItem.gstAtPurches}%):</span>
-  //                       <span><span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.gstAmount.toFixed(2)}</span>
-  //                     </div>
-  //                     <div className="flex justify-between">
-  //                       <span>Shipping Charges:</span>
-  //                       <span><span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.shippingCharge.toFixed(2)}</span>
-  //                     </div>
-  //                     <Separator />
-  //                     <div className="flex justify-between font-semibold">
-  //                       <span>Total Paid:</span>
-  //                       <span><span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.totalPaid.toFixed(2)}</span>
-  //                     </div>
-  //                   </div>
-  //                 </div>
+    //           {/* Payment & Refund Information */}
+    //           <Card>
+    //             <CardHeader>
+    //               <CardTitle className="flex items-center gap-2 text-lg">
+    //                 <CreditCard className="h-5 w-5" />
+    //                 Payment & Refund Details
+    //               </CardTitle>
+    //             </CardHeader>
+    //             <CardContent>
+    //               <div className="space-y-4">
+    //                 {/* Payment Breakdown */}
+    //                 <div className="bg-gray-50 p-4 rounded-lg">
+    //                   <h4 className="font-semibold mb-3">Payment Breakdown</h4>
+    //                   <div className="space-y-2 text-sm">
+    //                     <div className="flex justify-between">
+    //                       <span>Item Price:</span>
+    //                       <span><span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.itemPrice.toFixed(2)}</span>
+    //                     </div>
+    //                     {refundAmounts.discountAmount > 0 && (
+    //                       <div className="flex justify-between text-green-600">
+    //                         <span>Discount Applied:</span>
+    //                         <span>
+    //                           -<span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.discountAmount.toFixed(2)}
+    //                         </span>
+    //                       </div>
+    //                     )}
+    //                     <div className="flex justify-between">
+    //                       <span>GST ({orderItem.gstAtPurches}%):</span>
+    //                       <span><span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.gstAmount.toFixed(2)}</span>
+    //                     </div>
+    //                     <div className="flex justify-between">
+    //                       <span>Shipping Charges:</span>
+    //                       <span><span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.shippingCharge.toFixed(2)}</span>
+    //                     </div>
+    //                     <Separator />
+    //                     <div className="flex justify-between font-semibold">
+    //                       <span>Total Paid:</span>
+    //                       <span><span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.totalPaid.toFixed(2)}</span>
+    //                     </div>
+    //                   </div>
+    //                 </div>
 
-  //                 {/* Refund Information */}
-  //                 <div className="bg-blue-50 p-4 rounded-lg">
-  //                   <h4 className="font-semibold mb-3 text-blue-900">
-  //                     Refund Information
-  //                   </h4>
-  //                   <div className="space-y-2 text-sm">
-  //                     {refundAmounts.alreadyRefunded > 0 && (
-  //                       <div className="flex justify-between text-orange-600">
-  //                         <span>Already Refunded:</span>
-  //                         <span>
-  //                           <span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.alreadyRefunded.toFixed(2)}
-  //                         </span>
-  //                       </div>
-  //                     )}
-  //                     <div className="flex justify-between font-semibold text-blue-900">
-  //                       <span>Refundable Amount (excluding GST & Shipping):</span>
-  //                       <span>
-  //                         <span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.refundableAmount.toFixed(2)}
-  //                       </span>
-  //                     </div>
-  //                     {orderItem.isRefunded && (
-  //                       <div className="flex items-center gap-2 text-green-600 mt-2">
-  //                         <Check className="h-4 w-4" />
-  //                         <span className="text-sm">
-  //                           Refund Status: {orderItem.refundStatus}
-  //                         </span>
-  //                       </div>
-  //                     )}
-  //                   </div>
-  //                 </div>
+    //                 {/* Refund Information */}
+    //                 <div className="bg-blue-50 p-4 rounded-lg">
+    //                   <h4 className="font-semibold mb-3 text-blue-900">
+    //                     Refund Information
+    //                   </h4>
+    //                   <div className="space-y-2 text-sm">
+    //                     {refundAmounts.alreadyRefunded > 0 && (
+    //                       <div className="flex justify-between text-orange-600">
+    //                         <span>Already Refunded:</span>
+    //                         <span>
+    //                           <span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.alreadyRefunded.toFixed(2)}
+    //                         </span>
+    //                       </div>
+    //                     )}
+    //                     <div className="flex justify-between font-semibold text-blue-900">
+    //                       <span>Refundable Amount (excluding GST & Shipping):</span>
+    //                       <span>
+    //                         <span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.refundableAmount.toFixed(2)}
+    //                       </span>
+    //                     </div>
+    //                     {orderItem.isRefunded && (
+    //                       <div className="flex items-center gap-2 text-green-600 mt-2">
+    //                         <Check className="h-4 w-4" />
+    //                         <span className="text-sm">
+    //                           Refund Status: {orderItem.refundStatus}
+    //                         </span>
+    //                       </div>
+    //                     )}
+    //                   </div>
+    //                 </div>
 
-  //                 {/* Payment Method Info */}
-  //                 {orderItem.OrderItemPayment.length > 0 && (
-  //                   <div className="bg-gray-50 p-4 rounded-lg">
-  //                     <h4 className="font-semibold mb-3">Payment Method</h4>
-  //                     <div className="text-sm space-y-1">
-  //                       <p>
-  //                         <span className="text-gray-600">Gateway:</span>{" "}
-  //                         {orderItem.OrderItemPayment[0].payment.paymentGateway}
-  //                       </p>
-  //                       <p>
-  //                         <span className="text-gray-600">Transaction ID:</span>{" "}
-  //                         {orderItem.OrderItemPayment[0].payment.transactionId}
-  //                       </p>
-  //                       <p>
-  //                         <span className="text-gray-600">Payment Status:</span>
-  //                         <Badge variant="secondary" className="ml-2">
-  //                           {
-  //                             orderItem.OrderItemPayment[0].payment
-  //                               .paymentStatus
-  //                           }
-  //                         </Badge>
-  //                       </p>
-  //                     </div>
-  //                   </div>
-  //                 )}
-  //               </div>
-  //             </CardContent>
-  //           </Card>
+    //                 {/* Payment Method Info */}
+    //                 {orderItem.OrderItemPayment.length > 0 && (
+    //                   <div className="bg-gray-50 p-4 rounded-lg">
+    //                     <h4 className="font-semibold mb-3">Payment Method</h4>
+    //                     <div className="text-sm space-y-1">
+    //                       <p>
+    //                         <span className="text-gray-600">Gateway:</span>{" "}
+    //                         {orderItem.OrderItemPayment[0].payment.paymentGateway}
+    //                       </p>
+    //                       <p>
+    //                         <span className="text-gray-600">Transaction ID:</span>{" "}
+    //                         {orderItem.OrderItemPayment[0].payment.transactionId}
+    //                       </p>
+    //                       <p>
+    //                         <span className="text-gray-600">Payment Status:</span>
+    //                         <Badge variant="secondary" className="ml-2">
+    //                           {
+    //                             orderItem.OrderItemPayment[0].payment
+    //                               .paymentStatus
+    //                           }
+    //                         </Badge>
+    //                       </p>
+    //                     </div>
+    //                   </div>
+    //                 )}
+    //               </div>
+    //             </CardContent>
+    //           </Card>
 
-  //           {/* Cancellation Form */}
-  //           <Card>
-  //             <CardHeader>
-  //               <CardTitle className="text-lg">Cancellation Details</CardTitle>
-  //             </CardHeader>
-  //             <CardContent className="space-y-4">
-  //               <div>
-  //                 <Label htmlFor="reason">Cancellation Reason *</Label>
-  //                 <Textarea
-  //                   id="reason"
-  //                   placeholder="Please provide a reason for cancellation..."
-  //                   value={cancellationReason}
-  //                   onChange={(e) => setCancellationReason(e.target.value)}
-  //                   className="mt-1"
-  //                   rows={3}
-  //                 />
-  //               </div>
+    //           {/* Cancellation Form */}
+    //           <Card>
+    //             <CardHeader>
+    //               <CardTitle className="text-lg">Cancellation Details</CardTitle>
+    //             </CardHeader>
+    //             <CardContent className="space-y-4">
+    //               <div>
+    //                 <Label htmlFor="reason">Cancellation Reason *</Label>
+    //                 <Textarea
+    //                   id="reason"
+    //                   placeholder="Please provide a reason for cancellation..."
+    //                   value={cancellationReason}
+    //                   onChange={(e) => setCancellationReason(e.target.value)}
+    //                   className="mt-1"
+    //                   rows={3}
+    //                 />
+    //               </div>
 
-  //               <div>
-  //                 <Label htmlFor="refundAmount">
-  //                   Custom Refund Amount (Optional)
-  //                 </Label>
-  //                 <div className="mt-1 relative">
-  //                   <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-  //                   <input
-  //                     id="refundAmount"
-  //                     type="number"
-  //                     placeholder={`Default: ₹${refundAmounts.refundableAmount.toFixed(2)}`}
-  //                     value={refundAmount}
-  //                     onChange={(e) => setRefundAmount(e.target.value)}
-  //                     max={refundAmounts.refundableAmount}
-  //                     min="0"
-  //                     step="0.01"
-  //                     className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-  //                   />
-  //                 </div>
-  //                 <p className="text-xs text-gray-500 mt-1">
-  //                   Leave empty to refund the full refundable amount (<span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.refundableAmount.toFixed(2)})
-  //                 </p>
-  //               </div>
-  //             </CardContent>
-  //           </Card>
+    //               <div>
+    //                 <Label htmlFor="refundAmount">
+    //                   Custom Refund Amount (Optional)
+    //                 </Label>
+    //                 <div className="mt-1 relative">
+    //                   <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+    //                   <input
+    //                     id="refundAmount"
+    //                     type="number"
+    //                     placeholder={`Default: ₹${refundAmounts.refundableAmount.toFixed(2)}`}
+    //                     value={refundAmount}
+    //                     onChange={(e) => setRefundAmount(e.target.value)}
+    //                     max={refundAmounts.refundableAmount}
+    //                     min="0"
+    //                     step="0.01"
+    //                     className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+    //                   />
+    //                 </div>
+    //                 <p className="text-xs text-gray-500 mt-1">
+    //                   Leave empty to refund the full refundable amount (<span className="inline-block align-middle mr-0.5">₹</span>{refundAmounts.refundableAmount.toFixed(2)})
+    //                 </p>
+    //               </div>
+    //             </CardContent>
+    //           </Card>
 
-  //           {/* Action Buttons */}
-  //           <div className="flex flex-col sm:flex-row gap-3 pt-4">
-  //             <Button
-  //               onClick={handleCancelWithRefund}
-  //               disabled={isProcessing}
-  //               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-  //             >
-  //               {isProcessing ? (
-  //                 <>
-  //                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-  //                   Processing...
-  //                 </>
-  //               ) : (
-  //                 <>
-  //                   <CreditCard className="h-4 w-4 mr-2" />
-  //                   Cancel with Refund (<span className="inline-block align-middle mr-0.5">₹</span>
-  //                   {(
-  //                     Number.parseFloat(refundAmount) ||
-  //                     refundAmounts.refundableAmount
-  //                   ).toFixed(2)}
-  //                   )
-  //                 </>
-  //               )}
-  //             </Button>
+    //           {/* Action Buttons */}
+    //           <div className="flex flex-col sm:flex-row gap-3 pt-4">
+    //             <Button
+    //               onClick={handleCancelWithRefund}
+    //               disabled={isProcessing}
+    //               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+    //             >
+    //               {isProcessing ? (
+    //                 <>
+    //                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+    //                   Processing...
+    //                 </>
+    //               ) : (
+    //                 <>
+    //                   <CreditCard className="h-4 w-4 mr-2" />
+    //                   Cancel with Refund (<span className="inline-block align-middle mr-0.5">₹</span>
+    //                   {(
+    //                     Number.parseFloat(refundAmount) ||
+    //                     refundAmounts.refundableAmount
+    //                   ).toFixed(2)}
+    //                   )
+    //                 </>
+    //               )}
+    //             </Button>
 
-  //             <Button
-  //               onClick={handleCancelWithoutRefund}
-  //               disabled={isProcessing}
-  //               variant="destructive"
-  //               className="flex-1"
-  //             >
-  //               {isProcessing ? (
-  //                 <>
-  //                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-  //                   Processing...
-  //                 </>
-  //               ) : (
-  //                 <>
-  //                   <X className="h-4 w-4 mr-2" />
-  //                   Cancel without Refund
-  //                 </>
-  //               )}
-  //             </Button>
+    //             <Button
+    //               onClick={handleCancelWithoutRefund}
+    //               disabled={isProcessing}
+    //               variant="destructive"
+    //               className="flex-1"
+    //             >
+    //               {isProcessing ? (
+    //                 <>
+    //                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+    //                   Processing...
+    //                 </>
+    //               ) : (
+    //                 <>
+    //                   <X className="h-4 w-4 mr-2" />
+    //                   Cancel without Refund
+    //                 </>
+    //               )}
+    //             </Button>
 
-  //             <Button
-  //               onClick={() => {
-  //                 setCancelDialogOpen(false);
-  //                 setCancellationReason("");
-  //                 setRefundAmount("");
-  //               }}
-  //               variant="outline"
-  //               disabled={isProcessing}
-  //             >
-  //               Close
-  //             </Button>
-  //           </div>
+    //             <Button
+    //               onClick={() => {
+    //                 setCancelDialogOpen(false);
+    //                 setCancellationReason("");
+    //                 setRefundAmount("");
+    //               }}
+    //               variant="outline"
+    //               disabled={isProcessing}
+    //             >
+    //               Close
+    //             </Button>
+    //           </div>
 
-  //           {/* Warning Notice */}
-  //           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-  //             <div className="flex items-start gap-3">
-  //               <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-  //               <div className="text-sm">
-  //                 <p className="font-semibold text-yellow-800">
-  //                   Important Notice:
-  //                 </p>
-  //                 <ul className="mt-2 space-y-1 text-yellow-700">
-  //                   <li>
-  //                     • Cancellation with refund will initiate the refund
-  //                     process immediately
-  //                   </li>
-  //                   <li>
-  //                     • Refunds typically take 3-7 business days to reflect in
-  //                     customer's account
-  //                   </li>
-  //                   <li>• Cancellation without refund is irreversible</li>
-  //                   <li>
-  //                     • Customer will be notified via email about the
-  //                     cancellation
-  //                   </li>
-  //                 </ul>
-  //               </div>
-  //             </div>
-  //           </div>
-  //         </div>
-  //       </DialogContent>
-  //     </Dialog>
-      
-  //   );
+    //           {/* Warning Notice */}
+    //           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+    //             <div className="flex items-start gap-3">
+    //               <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+    //               <div className="text-sm">
+    //                 <p className="font-semibold text-yellow-800">
+    //                   Important Notice:
+    //                 </p>
+    //                 <ul className="mt-2 space-y-1 text-yellow-700">
+    //                   <li>
+    //                     • Cancellation with refund will initiate the refund
+    //                     process immediately
+    //                   </li>
+    //                   <li>
+    //                     • Refunds typically take 3-7 business days to reflect in
+    //                     customer's account
+    //                   </li>
+    //                   <li>• Cancellation without refund is irreversible</li>
+    //                   <li>
+    //                     • Customer will be notified via email about the
+    //                     cancellation
+    //                   </li>
+    //                 </ul>
+    //               </div>
+    //             </div>
+    //           </div>
+    //         </div>
+    //       </DialogContent>
+    //     </Dialog>
+
+    //   );
   };
 
   // Add this function to handle file upload
-  const router=useRouter()
+  const router = useRouter()
   const handleUploadDesign = async (e: React.ChangeEvent<HTMLInputElement>, orderId: string) => {
     const file = e.target.files?.[0];
-    console.log("🔥🔥🔥🔥🔥🔥file🔥🔥🔥🔥🔥🔥", file)
-    console.log("🔥🔥🔥🔥🔥🔥orderId🔥🔥🔥🔥🔥🔥", orderId)
     if (!file) return;
     setUploading(true);
     setUploadedUrl(null);
@@ -1078,15 +1076,15 @@ const Productspage = () => {
       });
 
       const data = await res.json();
-      console.log("🔥🔥🔥🔥🔥🔥data🔥🔥🔥🔥🔥🔥", data)
-      const payload={
+      
+      const payload = {
         orderId: orderId,
         designUrl: data.url,
-        orderStauts:'delivered'
+        orderStauts: 'delivered'
       }
-      const resposnse=await axiosInstance.put(`/seller/updateOrder/${orderId}`, payload)
-      console.log("🔥🔥🔥🔥🔥🔥resposnse🔥🔥🔥🔥🔥🔥", resposnse)
-      if(resposnse.status==200){
+      const resposnse = await axiosInstance.put(`/seller/updateOrder/${orderId}`, payload)
+      
+      if (resposnse.status == 200) {
         window.location.reload()
         // router.push('/seller/orders')
       }
@@ -1103,19 +1101,18 @@ const Productspage = () => {
   };
 
   const handleDeleteDesign = async (orderId: string) => {
-    
+
 
     try {
       // TODO: Replace with your actual API endpoint
 
-      const payload={
+      const payload = {
         orderId: orderId,
         designUrl: '',
-        orderStauts:'pending'
+        orderStauts: 'pending'
       }
-      const resposnse=await axiosInstance.put(`/seller/updateOrder/${orderId}`, payload);
-      console.log("🔥🔥🔥🔥🔥🔥resposnse🔥🔥🔥🔥🔥🔥", resposnse)
-      if(resposnse.status==200){
+      const resposnse = await axiosInstance.put(`/seller/updateOrder/${orderId}`, payload);
+      if (resposnse.status == 200) {
         toast.success("Design deleted successfully");
         window.location.reload()
         // router.push('/seller/orders')
@@ -1130,6 +1127,46 @@ const Productspage = () => {
       alert("Failed to delete the design.");
     }
   };
+
+  const handleDesignSentToggle = async (orderId: string, userId: string, userDocumenturl: string, userDocumentid: string, userDocument: boolean) => {
+ 
+    if(userDocument){
+      const payload={
+        id: userDocumentid,
+        userId: userId,
+        designUrl: userDocumenturl,
+        orderId: orderId,
+
+      }
+      const response = await axiosInstance.post(`/admin/sendOrderDocument`, payload)
+      toast.success("Design Removed for User");
+      setOrders((prev) =>
+        prev.map((item) =>
+          item.id === orderId ? { ...item, userDocument: !item.userDocument } : item
+        )
+      );
+      window.location.reload()
+    }
+    
+    else  {
+      setOrders((prev) =>
+      prev.map((item) =>
+        item.id === orderId ? { ...item, userDocument: !item.userDocument } : item
+      )
+    );
+    const payload={
+      userId: userId,
+      designUrl: userDocumenturl,
+      orderId: orderId,
+
+    }
+    const response = await axiosInstance.post(`/admin/sendOrderDocument`, payload)
+    toast.success("Design Sent to User");
+    window.location.reload()
+  }
+
+    
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen p-4 md:p-8">
@@ -1164,11 +1201,10 @@ const Productspage = () => {
                   setCurrentPage(1);
                 }}
                 className={`relative px-4 py-3 font-medium text-base transition-all flex items-center gap-2
-                            ${
-                              activeTab === tab.name
-                              ? "text-blue-600 bg-blue-50 rounded-lg" 
-                                : "text-gray-600 hover:text-gray-800"
-                            } 
+                            ${activeTab === tab.name
+                    ? "text-blue-600 bg-blue-50 rounded-lg"
+                    : "text-gray-600 hover:text-gray-800"
+                  } 
                             min-w-[150px] text-center justify-center`}
               >
                 {tab.icon}
@@ -1177,12 +1213,11 @@ const Productspage = () => {
                   <TabCountSkeleton />
                 ) : (
                   <span
-                    className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full ${
-                      badgeStyles[tab.name]
-                    }`}
+                    className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full ${badgeStyles[tab.name]
+                      }`}
                   >
-                  {tab.count}
-                </span>
+                    {tab.count}
+                  </span>
                 )}
               </button>
             ))}
@@ -1258,9 +1293,8 @@ const Productspage = () => {
                     <TableRowSkeleton columns={9} key={idx} />
                   ))
                 ) : paginatedOrders.length > 0 ? (
-                  console.log("🔥🔥🔥🔥🔥🔥paginatedOrders🔥🔥🔥🔥🔥🔥", paginatedOrders),
-                  paginatedOrders.map((order:any, index:any) => (
-                    
+                  paginatedOrders.map((order: any, index: any) => (
+
                     <React.Fragment key={order.id}>
                       <tr className="hover:bg-gray-50 transition-colors">
                         <td className="py-4 px-4">
@@ -1319,27 +1353,28 @@ const Productspage = () => {
                         </td>
                         <td className="py-4 px-4">
                           <span
-                            className={`px-3 py-1.5 text-xs font-semibold rounded-full ${
-                              badgeStyles[order.status]
-                            }`}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-full ${badgeStyles[order.status]
+                              }`}
                           >
                             {order.status === "cancellRequested"
                               ? "Cancellation Requested"
                               : order.status.charAt(0).toUpperCase() +
-                                order.status.slice(1)}
+                              order.status.slice(1)}
                           </span>
                         </td>
                         <td className="py-4 px-4">
-                          <span
-                            className={`px-3 py-1.5 text-xs font-semibold rounded-full ${
-                              badgeStyles[order.status]
-                            }`}
-                          >
-                            {order.status === "cancellRequested"
-                              ? "Cancellation Requested"
-                              : order.status.charAt(0).toUpperCase() +
-                                order.status.slice(1)}
-                          </span>
+                          <div className="flex items-center space-x-2">
+                          <Label htmlFor={`design-sent-${order.id}`}>
+                              {order.userDocument ? "Design Sent" : "Design Not Sent"}
+                            </Label>
+                            <Switch 
+                              id={`design-sent-${order.id}`} 
+                              checked={order.userDocument}
+                              onCheckedChange={() => handleDesignSentToggle(order.id, order.userId, order.designUrl, order?.userDocumentId, order?.userDocument)}
+                              disabled={order.status==='pending'}
+                            />
+                            
+                          </div>
                         </td>
                         <td className="py-4 px-6 text-right">
                           <div className="flex justify-end gap-2">
@@ -1352,12 +1387,11 @@ const Productspage = () => {
                               className="p-1.5  rounded-md hover:bg-gray-100 transition-colors"
                             >
                               <ChevronDown
-                                className={`h-5 w-5 text-gray-600 transition-transform ${
-                                  isVisible === order.id ? "rotate-180" : ""
-                                }`}
+                                className={`h-5 w-5 text-gray-600 transition-transform ${isVisible === order.id ? "rotate-180" : ""
+                                  }`}
                               />
                             </button>
-                                
+
                             {/* <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <button className="p-1.5 rounded-md hover:bg-gray-100 transition-colors">
@@ -1406,8 +1440,8 @@ const Productspage = () => {
                                 }}>
                                   <Truck className="w-4 h-4 mr-2" /> Shipment
                                 </DropdownMenuItem> */}
-                              {/* </DropdownMenuContent>
-                            </DropdownMenu> */} 
+                            {/* </DropdownMenuContent>
+                            </DropdownMenu> */}
 
                           </div>
                         </td>
@@ -1493,20 +1527,20 @@ const Productspage = () => {
                               {/* Additional Product Information */}
                               <div className="mt-6 pt-4 border-t flex justify-between items-center">
                                 <div className="">
-                                   {(() => {
-                                const orderItem = orderItems.find(item => item.id === order.id);
-                                if (orderItem?.product?.aboutProduct?.about) {
-                                  return (
-                                    <div>
-                                      <h4 className="font-semibold text-gray-900 mb-2">About Product</h4>
-                                      <p className="text-gray-600 text-sm">
-                                        {orderItem.product.aboutProduct.about}
-                                      </p>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              })()}
+                                  {(() => {
+                                    const orderItem = orderItems.find(item => item.id === order.id);
+                                    if (orderItem?.product?.aboutProduct?.about) {
+                                      return (
+                                        <div>
+                                          <h4 className="font-semibold text-gray-900 mb-2">About Product</h4>
+                                          <p className="text-gray-600 text-sm">
+                                            {orderItem.product.aboutProduct.about}
+                                          </p>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
                                 </div>
                                 {
                                   order.designUrl
@@ -1566,9 +1600,9 @@ const Productspage = () => {
                                       </div>
                                     )
                                 }
-                                
+
                               </div>
-                              
+
                             </div>
                           </td>
                         </tr>
@@ -1630,9 +1664,9 @@ const Productspage = () => {
             <p className="text-sm text-gray-700">
               {orderCounts[activeTab as keyof typeof orderCounts] > 0
                 ? `Showing ${startIndex + 1} to ${Math.min(
-                    startIndex + rowsPerPage,
-                    orderCounts[activeTab as keyof typeof orderCounts]
-                  )} of ${orderCounts[activeTab as keyof typeof orderCounts]}`
+                  startIndex + rowsPerPage,
+                  orderCounts[activeTab as keyof typeof orderCounts]
+                )} of ${orderCounts[activeTab as keyof typeof orderCounts]}`
                 : "No records to display"}
             </p>
 
@@ -1641,39 +1675,36 @@ const Productspage = () => {
               <button
                 onClick={handlePrevPage}
                 disabled={currentPage === 1}
-                className={`p-2 rounded-md ${
-                  currentPage === 1
+                className={`p-2 rounded-md ${currentPage === 1
                     ? "opacity-50 cursor-not-allowed text-gray-400"
                     : "text-gray-700 hover:bg-gray-100"
-                }`}
+                  }`}
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
               <div className="flex space-x-1">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                   (page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`w-8 h-8 rounded-md text-sm ${
-                      currentPage === page 
-                        ? "bg-blue-600 text-white" 
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    {page}
-                  </button>
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-md text-sm ${currentPage === page
+                          ? "bg-blue-600 text-white"
+                          : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                    >
+                      {page}
+                    </button>
                   )
                 )}
               </div>
               <button
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages}
-                className={`p-2 rounded-md ${
-                  currentPage === totalPages
+                className={`p-2 rounded-md ${currentPage === totalPages
                     ? "opacity-50 cursor-not-allowed text-gray-400"
                     : "text-gray-700 hover:bg-gray-100"
-                }`}
+                  }`}
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
@@ -1692,4 +1723,7 @@ const Productspage = () => {
 };
 
 export default Productspage;
+
+
+
 
