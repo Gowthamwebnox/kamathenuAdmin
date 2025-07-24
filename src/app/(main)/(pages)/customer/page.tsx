@@ -137,7 +137,7 @@ export default function CustomerPage() {
         params.append("isEmailVerified", "false");
       }
 
-      const response = await axiosInstance.get(`/admin/fetchUser`);
+      const response = await axiosInstance.get(`/admin/fetchUser?${params.toString()}`);
       if (response.status==400) {
         throw new Error("Network response was not ok");
       }

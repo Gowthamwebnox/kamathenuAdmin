@@ -191,23 +191,25 @@ export default function SellerPage() {
       sellerId: string;
       isApproved: boolean;
     }) => {
-      const response = await fetch(`/api/admin/seller/approve`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ sellerId, isApproved }),
-      });
-      if (!response.ok) {
+      // const response = await fetch(`/api/admin/seller/approve`, {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify({ sellerId, isApproved }),
+      // });
+      const response =await axiosInstance.put('/admin/approveSeller',{sellerId,isApproved})
+      if (response.status!==200) {
         throw new Error("Failed to update seller approval status");
       }
-      return response.json();
+      
+      return response.data.approvedSeller;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["getAllSellers"] });
       toast.success(
         `Seller ${
-          variables.isApproved ? "approved" : "disapproved"
+          variables.isApproved ? "Approved" : "Pending"
         } successfully`
       );
     },
@@ -309,8 +311,8 @@ export default function SellerPage() {
       header: "Status",
       cell: ({ row }) => {
         return (
-          <Badge variant={row.original?.isApproved ? "default" : "secondary"}>
-            {row.original?.isApproved ? "Approved" : "Pending"}
+            <Badge variant={row.original?.status==="Approved" ? "default" : "secondary"}>
+            {row.original?.status==="Approved" ? "Approved" : "Pending"}
           </Badge>
         );
       },
@@ -335,6 +337,7 @@ export default function SellerPage() {
       id: "actions",
       cell: ({ row }) => {
         const seller = row.original;
+        console.log(seller);
         const isLoading =
           approveMutation.isPending &&
           approveMutation.variables?.sellerId === seller?.id;
@@ -346,7 +349,7 @@ export default function SellerPage() {
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
               ) : (
                 <Switch
-                  checked={seller?.isApproved}
+                    checked={seller?.status==="Approved"}
                   onCheckedChange={(checked) =>
                     approveMutation.mutate({
                       sellerId: seller?.id,
