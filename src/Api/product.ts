@@ -1,5 +1,6 @@
 // services/product.service.ts
 
+import axiosInstance from "@/app/utils/axiosInstance"
 import axios from "axios"
 
 
@@ -29,7 +30,7 @@ export class Product {
     id: string,
     isApproved: boolean
   }) {
-    const response = await axios.patch(`api/admin/products/${id}/approve`, {
+      const response = await axiosInstance.patch(`/admin/approveProduct/${id}`, {
        isApproved 
     })
 

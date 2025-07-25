@@ -310,9 +310,10 @@ export default function SellerPage() {
       accessorKey: "isApproved",
       header: "Status",
       cell: ({ row }) => {
+        const seller:any = row.original;
         return (
-            <Badge variant={row.original?.status==="Approved" ? "default" : "secondary"}>
-            {row.original?.status==="Approved" ? "Approved" : "Pending"}
+            <Badge variant={seller?.status==="Approved" ? "default" : "secondary"}>
+            {seller?.status==="Approved" ? "Approved" : "Pending"}
           </Badge>
         );
       },
@@ -336,7 +337,7 @@ export default function SellerPage() {
     {
       id: "actions",
       cell: ({ row }) => {
-        const seller = row.original;
+        const seller:any = row.original;
         console.log(seller);
         const isLoading =
           approveMutation.isPending &&

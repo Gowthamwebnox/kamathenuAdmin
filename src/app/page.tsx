@@ -16,33 +16,56 @@ import { formatCurrency } from "@/lib/utils"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useUserStore } from "./(stateManagement)/userStore"
+import axiosInstance from "./utils/axiosInstance"
 
 async function getDashboardStats() {
-  const res = await fetch("http://localhost:3001/api/admin/dashboard/stats", {
-    cache: 'no-store',
-  });
+  const res = await axiosInstance.get("/admin/fetchDashboard")
+  //  await fetch("http://localhost:3001/api/admin/dashboard/stats", {
+  //   cache: 'no-store',
+  // });
   
-  if (!res.ok) {
+  if (res.status !== 200) {
     throw new Error('Failed to fetch dashboard stats');
   }
   
-  return res.json();
+  return res.data;
 }
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { user } = useUserStore()
+  const [userDataParsed, setUserDataParsed] = useState<any>(null)
+
+  useEffect(() => {
+    // Only access localStorage on the client side
+    const userData = localStorage.getItem("user-store")
+    if (userData) {
+      setUserDataParsed(JSON.parse(userData))
+    }
+  }, [])
+
+
   const [stats, setStats] = useState({
-    users: { total: 0, new: 0, returning: 0 },
-    orders: { total: 0, byStatus: {}, recent: 0 },
-    sellers: { total: 0 },
-    revenue: { total: 0 },
-    categories: []
+    users: { total: 12, new: 0, returning: 0 },
+    orders: { total: 1, byStatus: {}, recent: 0 },
+    sellers: { total: 1 },
+    revenue: { total: 13000 },
+    last6DaysUsers: 0,
+    last6DaysOrders: 0,
+    last6DaysSellers: 0,
+    totalUsers: 0, // Added missing property
+    totalProducts: 0, // Added missing property
+    totalOrders: 0,
+    totalSellers: 0,
+    // categories: []
   });
 
   useEffect(() => {
-    // Check authentication
-    if (!user) {
+    // Check authentication only after userDataParsed is loaded
+    if (userDataParsed === null) {
+      return; // Still loading
+    }
+    
+    if (!userDataParsed) {
       router.push('/login')
       return
     }
@@ -52,18 +75,24 @@ export default function DashboardPage() {
       setStats(data);
     };
     fetchStats();
-  }, [user, router]);
+  }, [userDataParsed, router]);
   
   // Calculate percentage changes (you might want to store these in the database)
-  const userChange = "+2.6%"; // This should come from comparing with previous period
-  const orderChange = "+2.6%"; // This should come from comparing with previous period
-  const sellerChange = "+2.6%"; // This should come from comparing with previous period
+  const userChange = stats.totalUsers > 0 
+  ? `+${Math.round((stats.last6DaysUsers / stats.totalUsers) * 100)}%` 
+  : "+0%";
+  const orderChange = stats.totalOrders > 0 
+  ? `+${Math.round((stats.last6DaysOrders / stats.totalOrders) * 100)}%` 
+  : "+0%"; // This should come from comparing with previous period
+  const sellerChange = stats.totalSellers > 0 
+  ? `+${Math.round((stats.last6DaysSellers / stats.totalSellers) * 100)}%` 
+  : "+0%"; // This should come from comparing with previous period
 
   // Calculate customer distribution percentage
-  const totalCustomers = stats.users.new + stats.users.returning;
-  const newCustomerPercentage = totalCustomers > 0 
-    ? Math.round((stats.users.new / totalCustomers) * 100) 
-    : 0;
+  // const totalCustomers = stats.users.new + stats.users.returning;
+  // const newCustomerPercentage = totalCustomers > 0 
+  //   ? Math.round((stats.users.new / totalCustomers) * 100) 
+  //   : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -71,7 +100,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <StatCard
             title="Total active users" 
-            value={stats.users.total.toLocaleString()}
+            value={stats.last6DaysUsers.toString()}
             change={userChange}
             period="Last 6 days"
             icon={""}
@@ -82,7 +111,7 @@ export default function DashboardPage() {
 
           <StatCard
             title="Total Orders"
-            value={stats.orders.total.toLocaleString()}
+            value={stats.last6DaysOrders.toString()}
             change={orderChange}
             period="Last 6 days"
             icon={"/assets/icons/orderTrack.png"}
@@ -92,7 +121,7 @@ export default function DashboardPage() {
 
           <StatCard
             title="Total Sellers"
-            value={stats.sellers.total.toLocaleString()}
+            value={stats.last6DaysSellers.toString()}
             change={sellerChange}
             period="Last 6 days"
             icon={"/assets/icons/shop.png"}
@@ -143,17 +172,17 @@ export default function DashboardPage() {
           <div className="md:col-span-12 h-full">
             <Card className="bg-[#FFFFF0] h-full">
               <CardContent className="p-0">
-                <RevenueChart totalRevenue={stats.revenue.total} />
+                <RevenueChart totalRevenue={stats?.totalProducts} />
               </CardContent>
             </Card>
           </div>
 
-          <div className="md:col-span-12 h-full">
+          {/* <div className="md:col-span-12 h-full">
             <TopCategoryList categories={stats.categories} />
-          </div>
+          </div> */}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-full">
+        {/* <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-full">
           <div className="md:col-span-4 h-full">
             <Card className="h-full">
               <CardContent className="p-6">
@@ -211,7 +240,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </div> */}
       </main>
     </div>
   )

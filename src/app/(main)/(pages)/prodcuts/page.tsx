@@ -277,7 +277,7 @@ console.log("data",data);
   };
 
   const handleApprovalChange = (product: Product, isApproved: boolean) => {
-    // approveMutation.mutate({ id: product.id, isApproved });
+    approveMutation.mutate({ id: product.id, isApproved });
   };
 
   const handlePageChange = (page: number) => {
@@ -301,7 +301,7 @@ console.log("data",data);
     },
   });
 
-  const columns: ColumnDef<Product>[] = [
+  const columns: ColumnDef<any>[] = [
     {
       id: "select",
       header: ({ table }) => (
@@ -343,7 +343,7 @@ console.log("data",data);
         </Button>
       ),
       cell: ({ row }) => {
-        const product = row.original;
+        const product:any = row.original;
         // const primaryImage =
         //   product.images.find((img) => img.isPrimary) || product.images[0];
         return (
@@ -364,7 +364,7 @@ console.log("data",data);
             <div>
               <div className="font-medium">{product.name}</div>
               <div className="text-xs text-muted-foreground">
-                {product.category?.name || "No category"}
+                {product?.category?.name || "No category"}
               </div>
             </div>
           </div>
@@ -375,7 +375,8 @@ console.log("data",data);
       accessorKey: "seller.storeName",
       header: "Seller",
       cell: ({ row }) => {
-        return <div>{row.original.seller?.storeName || "N/A"}</div>;
+        const product:any = row.original;
+        return <div>{product?.seller?.storeName || "N/A"}</div>;
       },
     },
     {
@@ -424,7 +425,7 @@ console.log("data",data);
       accessorKey: "isApproved",
       header: "Status",
       cell: ({ row }) => {
-        const product = row.original;
+        const product:any = row.original;
         return (
           <div className="flex justify-center">
             {product?.isApproved ? (
@@ -441,11 +442,11 @@ console.log("data",data);
     {
       id: "actions",
       cell: ({ row }) => {
-        const product = row.original;
+        const product:any  = row.original;
         return (
           <div className="flex items-center justify-end gap-2">
             <Switch
-              checked={product.isApproved}
+              checked={product?.isApproved}
               onCheckedChange={(checked) =>
                 handleApprovalChange(product, checked)
               }
@@ -601,7 +602,7 @@ console.log("data",data);
                     </Button>
                   )}
                 </div>
-                {categories?.map((category) => (
+                {categories?.map((category:any) => (
                   <div
                     key={category.id}
                     className="flex items-center space-x-2"
