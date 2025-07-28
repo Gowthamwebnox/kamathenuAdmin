@@ -187,8 +187,12 @@ export default function ProductsPage() {
       }
 
       try {
+        const userlocalstorage = localStorage.getItem("user-store");  
+        const user = JSON.parse(userlocalstorage || "{}");
+
         const response = await ProductApis.getProducts({
           search: debounceSearchQuery,
+          userId:user.state.user.userId,
           limit: pageSize,
           offset: pageIndex * pageSize,
           categoryId:
@@ -307,7 +311,7 @@ console.log("data",data);
       header: ({ table }) => (
         <input
           type="checkbox"
-          className="h-4 w-4 rounded border-gray-300"
+          className="h-4 w-4 rounded border-slate-300 ring-offset-2 ring-offset-background focus:ring-2 focus:ring-blue-500 transition-all"
           checked={table.getIsAllPageRowsSelected()}
           onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
         />
@@ -315,7 +319,7 @@ console.log("data",data);
       cell: ({ row }) => (
         <input
           type="checkbox"
-          className="h-4 w-4 rounded border-gray-300"
+          className="h-4 w-4 rounded border-slate-300 ring-offset-2 ring-offset-background focus:ring-2 focus:ring-blue-500 transition-all"
           checked={row.getIsSelected()}
           onChange={(e) => row.toggleSelected(!!e.target.checked)}
         />
@@ -336,7 +340,7 @@ console.log("data",data);
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="font-medium"
+          className="font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-all duration-200 -ml-3"
         >
           Product
           <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -347,7 +351,7 @@ console.log("data",data);
         // const primaryImage =
         //   product.images.find((img) => img.isPrimary) || product.images[0];
         return (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4 py-2">
             {/* {primaryImage && (
               <div className="h-10 w-10 relative overflow-hidden rounded-md">
                 <Image
@@ -361,9 +365,10 @@ console.log("data",data);
                 />
               </div>
             )} */}
-            <div>
-              <div className="font-medium">{product.name}</div>
-              <div className="text-xs text-muted-foreground">
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-slate-900 truncate">{product.name}</div>
+              <div className="text-sm text-slate-500 mt-1 flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-slate-300"></div>
                 {product?.category?.name || "No category"}
               </div>
             </div>
@@ -373,10 +378,16 @@ console.log("data",data);
     },
     {
       accessorKey: "seller.storeName",
-      header: "Seller",
+      header: ({ column }) => (
+        <div className="font-semibold text-slate-700">Seller</div>
+      ),
       cell: ({ row }) => {
         const product:any = row.original;
-        return <div>{product?.seller?.storeName || "N/A"}</div>;
+        return (
+          <div className="py-2">
+            <div className="font-medium text-slate-900">{product?.seller?.storeName || "N/A"}</div>
+          </div>
+        );
       },
     },
     {
@@ -385,14 +396,21 @@ console.log("data",data);
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-all duration-200 -ml-3"
         >
           Created At
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
       cell: ({ row }) => {
+        console.log("row",row);
         const date = new Date(row.original.createdAt);
-        return <div>{date.toLocaleDateString()}</div>;
+        return (
+          <div className="py-2">
+            <div className="text-slate-900 font-medium">{date.toLocaleDateString()}</div>
+            <div className="text-xs text-slate-500 mt-1">{date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+          </div>
+        );
       },
     },
     // {
@@ -408,32 +426,50 @@ console.log("data",data);
     // },
     {
       accessorKey: "variants",
-      header: "Price",
-      cell: ({ row }) => {
-        const prices = row?.original?.variants?.map((v:any) => parseFloat(v?.price));
-        const minPrice = Math?.min(12);
-        const maxPrice = Math?.max(323);
+      header: ({ column }) => (
+        <div className="font-semibold text-slate-700">Price</div>
+      ),
+              cell: ({ row }) => {
+         console.log("row",row.original.price);
+         // const prices = row?.original?.variants?.map((v:any) => parseFloat(v?.price));
+         // const minPrice = Math?.min(12);
+         // const maxPrice = Math?.max(323);
 
-        return (
-          <div>
-            {prices?.length > 1 ? `$${minPrice} - $${maxPrice}` : `$${minPrice}`}
-          </div>
-        );
-      },
+         const formatPrice = (price: number | string) => {
+           const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+           return new Intl.NumberFormat('en-US', {
+             style: 'currency',
+             currency: 'INR',
+             minimumFractionDigits: 2,
+           }).format(numPrice || 0);
+         };
+
+         return (
+           <div className="py-2">
+             <div className="font-bold text-lg text-emerald-600">
+               {formatPrice(row.original.price)}
+             </div>
+           </div>
+         );
+       },
     },
     {
       accessorKey: "isApproved",
-      header: "Status",
+      header: ({ column }) => (
+        <div className="font-semibold text-slate-700 text-center">Status</div>
+      ),
       cell: ({ row }) => {
         const product:any = row.original;
         return (
-          <div className="flex justify-center">
+          <div className="flex justify-center py-2">
             {product?.isApproved ? (
-              <Badge className="bg-green-600 hover:bg-green-600 text-white">
-                Approved
+              <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-200 font-medium px-3 py-1 shadow-sm">
+                ✓ Approved
               </Badge>
             ) : (
-              <Badge variant="secondary">Pending</Badge>
+              <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-200 font-medium px-3 py-1 shadow-sm">
+                ⏳ Pending
+              </Badge>
             )}
           </div>
         );
@@ -441,10 +477,13 @@ console.log("data",data);
     },
     {
       id: "actions",
+      header: ({ column }) => (
+        <div className="font-semibold text-slate-700 text-center">Actions</div>
+      ),
       cell: ({ row }) => {
         const product:any  = row.original;
         return (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-center gap-3 py-2">
             <Switch
               checked={product?.isApproved}
               onCheckedChange={(checked) =>
@@ -452,27 +491,26 @@ console.log("data",data);
               }
               disabled={approveMutation.isPending}
               className={clsx(
-                "data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-red-500",
-                "transition-colors"
+                "data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-red-400",
+                "transition-all duration-300 shadow-sm",
+                "data-[state=checked]:shadow-emerald-200 data-[state=unchecked]:shadow-red-200"
               )}
             />
-            <Button
+            {/* <Button
               variant="ghost"
               size="icon"
               onClick={() => handleEditProduct(product)}
-              className="h-8 w-8 p-0"
+              className="h-9 w-9 p-0 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 rounded-lg shadow-sm border border-transparent hover:border-blue-200"
             >
               <Eye className="h-4 w-4" />
-            </Button>
-     
-        
+            </Button> */}
           </div>
         );
       },
     },
   ];
 
-//   if (isError) return <div>Error loading products</div>;
+  if (isError) return <div>Error loading products</div>;
 
   return (
     <>
@@ -549,7 +587,7 @@ console.log("data",data);
               <Search className="h-4 w-4 text-gray-400" />
             </div>
             <Input
-              placeholder="Search products by name, description or SKU..."
+              placeholder="Search products by name"
               className="pl-10 pr-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -565,7 +603,7 @@ console.log("data",data);
           </div>
 
           {/* View Toggle and Filter Button */}
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <Button
               variant="outline"
               size="icon"
@@ -580,7 +618,7 @@ console.log("data",data);
             >
               <Filter className="h-4 w-4" />
             </Button>
-          </div>
+          </div> */}
         </div>
 
         {/* Filter Panel */}

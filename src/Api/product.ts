@@ -14,6 +14,7 @@ export class Product {
     offset?: number
     isApproved?: boolean
     sellerType?: string
+    userId?: string
   }) {
     console.log("params",params);
       const response = await axios.get("http://localhost:8000/api/admin/fetchAllProduct", {

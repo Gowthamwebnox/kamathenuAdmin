@@ -67,13 +67,13 @@ export const menuItems: MenuItem[] = [
     icon: Users,
     description: "Manage seller accounts",
   },
-  {
-    id: "upload",
-    label: "Upload files",
-    href: "/upload",
-    icon: Upload,
-    description: "Upload and manage files",
-  },
+  // {
+  //   id: "upload",
+  //   label: "Upload files",
+  //   href: "/upload",
+  //   icon: Upload,
+  //   description: "Upload and manage files",
+  // },
   {
     id: "settings",
     label: "Profile",

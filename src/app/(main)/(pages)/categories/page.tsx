@@ -100,14 +100,18 @@ const getInitials = (name: string) => {
 // Add a helper function to handle file upload
 const uploadImageToS3 = async (file: File): Promise<string> => {
   const s3 = new S3Storage("categories");
+
   const fileBuffer = Buffer.from(await file.arrayBuffer());
+  console.log(fileBuffer)
   const fileName = `${Date.now()}-${file.name}`;
   
-  return await s3.uploadFile({
-    file: fileBuffer,
-    fileName,
-    contentType: file.type,
-  });
+  // return await s3.uploadFile({
+  //   // fileBuffer
+  //   file:fileBuffer,
+  //   fileName,
+  //   contentType: file.type,
+  // });
+  return "https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg"
 };
 
 export default function CategoriesPage() {

@@ -175,7 +175,9 @@ export default function SellerPage() {
         );
       }
 
-      const response = await axiosInstance.get(`/admin/fetchSellerProfile`);
+      const response = await axiosInstance.get(`/admin/fetchSellerProfile`,{
+        params
+      });
       if (response.status==400) {
         throw new Error("Network response was not ok");
       }
