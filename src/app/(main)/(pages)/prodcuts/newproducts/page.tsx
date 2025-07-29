@@ -42,13 +42,22 @@ const RichTextEditor = dynamic(
 );
 
 // Client-side only wrapper component for RichTextEditor
-const localUserData=localStorage.getItem("user-store");
-console.log("localUserData");
-console.log(localUserData);
-var userData:any=null;
-if(localUserData){
-  userData=JSON.parse(localUserData);
-  console.log(userData.state.user.userId);
+let localUserData: any = null;
+let userData: any = null;
+
+// Only access localStorage in browser environment
+if (typeof window !== 'undefined') {
+  try {
+    localUserData = localStorage.getItem("user-store");
+    console.log("localUserData");
+    console.log(localUserData);
+    if (localUserData) {
+      userData = JSON.parse(localUserData);
+      console.log(userData?.state?.user?.userId);
+    }
+  } catch (error) {
+    console.error("Error accessing localStorage:", error);
+  }
 }
 const RichTextEditorSection = ({ content, setContent, isEditMode }: { 
   content: string; 
@@ -370,9 +379,9 @@ const ProductForm: React.FC = () => {
 
 
   var status="authenticated"
-  const data={
+  const data:any={
     user:{
-      sellerId:userData.state.user.userId
+      sellerId: userData?.state?.user?.userId || null
     }
   }
   // useEffect(() => {
@@ -449,6 +458,10 @@ const ProductForm: React.FC = () => {
         
 
   const fetchSellerId=async()=>{
+    if (!userData?.state?.user?.userId) {
+      console.error("User ID not available");
+      return;
+    }
     const response:any=await axiosInstance.get(`http://localhost:8000/api/admin/getSeller/${userData.state.user.userId}`)
     console.log("response",response.data[0].id);
    setSellerId(response.data[0].id);

@@ -187,12 +187,16 @@ export default function ProductsPage() {
       }
 
       try {
-        const userlocalstorage = localStorage.getItem("user-store");  
-        const user = JSON.parse(userlocalstorage || "{}");
+        let userId;
+        if (typeof window !== 'undefined') {
+          const userlocalstorage = localStorage.getItem("user-store");  
+          const user = JSON.parse(userlocalstorage || "{}");
+          userId = user?.state?.user?.userId;
+        }
 
         const response = await ProductApis.getProducts({
           search: debounceSearchQuery,
-          userId:user.state.user.userId,
+          userId: userId,
           limit: pageSize,
           offset: pageIndex * pageSize,
           categoryId:
